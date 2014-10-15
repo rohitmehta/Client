@@ -11,16 +11,51 @@ import javax.swing.JTextField;
 
 public class ClientInterface extends JPanel implements ActionListener {
 
-	/// TODO : Close the thread when window loses focus, so that Alt + Tab should work after that.
-	// TODO : Timer thread should span & notify again the main thread to bring in front.
-	
 	private static final long serialVersionUID = 6370399237714983851L;
 	public JFrame frame;
 	public static BlockingKeysThread blockingKeysThread;
-	
+
 	public ClientInterface() {
-		
+
 		super(new GridBagLayout());
+		prepareUI();
+
+		// Create Frame to display UI & block the navigations.
+		frame = new JFrame("Client");
+		frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		frame.setSize(Toolkit.getDefaultToolkit().getScreenSize());
+		frame.setResizable(false);
+		frame.setUndecorated(true);
+		frame.add(this);
+		frame.setVisible(true);
+		startBlockingThread();
+	}
+
+	/**
+	 * This method captures the action events from UI Components & then perform
+	 * the corresponding actions.
+	 */
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		if ("close".equalsIgnoreCase(e.getActionCommand())) {
+			frame.setState(JFrame.ICONIFIED);
+			BlockingKeysThread.setWorking(false);
+			try {
+				Thread.sleep(10000);
+				frame.setState(JFrame.NORMAL);
+				BlockingKeysThread.setWorking(true);
+				startBlockingThread();
+			} catch (InterruptedException e1) {
+				e1.printStackTrace();
+			}
+
+		}
+	}
+
+	/**
+	 * this method prepares the UI for the first blocking screen.
+	 */
+	private void prepareUI() {
 
 		JTextField textField = new JTextField(20);
 		textField.addActionListener(this);
@@ -37,30 +72,17 @@ public class ClientInterface extends JPanel implements ActionListener {
 		add(textField, c);
 
 		add(button, c);
-		// 1. Create the frame.
-		frame = new JFrame("Client");
+	}
 
-		// 2. Optional: What happens when the frame closes?
-		frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		frame.setSize(Toolkit.getDefaultToolkit().getScreenSize());
-		// frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
-		frame.setResizable(false);
-		frame.setUndecorated(true);
-		frame.add(this);
-		// 5. Show it.
-		frame.setVisible(true);
-		if(blockingKeysThread == null || !blockingKeysThread.isAlive()){
+	/**
+	 * This method will create a new blocking thread which will not allow
+	 * alt+tab to work to navigate to other window.
+	 */
+	private void startBlockingThread() {
+		if (blockingKeysThread == null || !blockingKeysThread.isAlive()) {
 			System.out.println("---- Blockign Keys Thread enabled-----");
 			blockingKeysThread = new BlockingKeysThread(frame);
 			blockingKeysThread.start();
-		}
-	}
-
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		if ("close".equalsIgnoreCase(e.getActionCommand())) {
-			frame.setState(JFrame.ICONIFIED);
-			BlockingKeysThread.setWorking(false);
 		}
 	}
 
